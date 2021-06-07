@@ -1,8 +1,9 @@
 package com.evolutiongaming.catshelper
 
-import cats.effect.concurrent.Deferred
+import cats.effect.kernel.Deferred
 import cats.effect.{IO, Resource}
 import cats.implicits._
+import cats.effect.implicits._
 import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.catshelper.IOSuite._
 import org.scalatest.funsuite.AsyncFunSuite
@@ -37,9 +38,9 @@ class ResourceBreakFlatMapChainTest extends AsyncFunSuite with Matchers {
       started  <- Deferred[IO, Unit]
       released <- Deferred[IO, Unit]
       resource  = for {
-        _ <- Resource.release { released.complete(()) }
-        _ <- Resource.liftF { started.complete(()) }
-        _ <- Resource.liftF { IO.never.as(()) }
+        _ <- Resource.release { released.complete(()).void }
+        _ <- Resource.eval { started.complete(()) }
+        _ <- Resource.eval { IO.never.as(()) }
       } yield {}
       fiber    <- resource.breakFlatMapChain.use { _ => ().pure[IO] }.start
       _        <- started.get

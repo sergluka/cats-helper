@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 import cats.Parallel
 import cats.arrow.FunctionK
 import cats.effect._
-import cats.effect.concurrent.Ref
+import cats.effect.kernel.Ref
 import cats.implicits._
 import com.evolutiongaming.catshelper.IOSuite._
 
@@ -17,16 +17,12 @@ class ThreadLocalRefSpec extends AsyncFunSuite with Matchers {
 
   test("thread local stored per thread") {
     val result = executor[IO](5).use { executor =>
-      implicit val contextShiftIO = IO.contextShift(executor)
-      implicit val concurrentIO = IO.ioConcurrentEffect
-      implicit val timerIO = IO.timer(executor)
-      implicit val parallel = IO.ioParallel
       testF[IO](5)
     }
     result.run()
   }
 
-  private def testF[F[_] : Sync : ThreadLocalOf : Parallel : Clock : ContextShift](n: Int): F[Unit] = {
+  private def testF[F[_] : Async : ThreadLocalOf : Parallel : Clock](n: Int): F[Unit] = {
 
     def test(ref: ThreadLocalRef[F, String], executor: ExecutionContext) = {
 
@@ -42,7 +38,7 @@ class ThreadLocalRefSpec extends AsyncFunSuite with Matchers {
 
       for {
         a  <- check
-        a1 <- ContextShift[F].evalOn(executor)(get)
+        a1 <- Async[F].evalOn(get, executor)
         _   = a should not equal a1
         _  <- ref.set(a + "|")
         _  <- check

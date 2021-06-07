@@ -8,7 +8,10 @@ import scala.util.control.NoStackTrace
 import org.scalatest.funsuite.AsyncFunSuite
 import org.scalatest.matchers.should.Matchers
 
-class ToFutureSpec extends AsyncFunSuite with Matchers {
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+class ToFutureSpec extends AsyncFunSuite with Matchers with TestIORuntime {
 
   for {
     (name, value, expected) <- List(
@@ -24,6 +27,8 @@ class ToFutureSpec extends AsyncFunSuite with Matchers {
       }
 
       val future = either.toFuture
+
+      Await.ready(future, 10.seconds)
 
       future.value.isDefined shouldEqual true
 
