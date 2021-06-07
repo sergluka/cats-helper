@@ -1,9 +1,10 @@
 package com.evolutiongaming.catshelper
 
-import cats.effect.concurrent.{Deferred, Ref}
+import cats.effect.kernel.{Deferred, Ref}
 import cats.effect.implicits._
 import cats.effect.{Concurrent, Sync}
 import cats.implicits._
+import cats.effect.kernel.Async
 
 trait Serial[F[_]] {
 
@@ -15,7 +16,7 @@ trait Serial[F[_]] {
 
 object Serial {
 
-  def of[F[_]: Concurrent]: F[Serial[F]] = {
+  def of[F[_]: Async]: F[Serial[F]] = {
 
     val void = ().pure[F]
 
@@ -34,7 +35,7 @@ object Serial {
                     _ <- task
                     a <- ref.modify {
                       case Some(tasks) if tasks.nonEmpty =>
-                        val task = Sync[F].suspend { tasks.reverse.sequence_ }
+                        val task = Sync[F].defer { tasks.reverse.sequence_ }
                         (List.empty[F[Unit]].some, task.asLeft[Unit])
                       case _                             =>
                         (none[List[F[Unit]]], ().asRight[F[Unit]])
@@ -45,10 +46,10 @@ object Serial {
                 .void
             }
 
-            Concurrent[F].uncancelable {
+            Concurrent[F].uncancelable { _ =>
               for {
-                d <- Deferred.uncancelable[F, Either[Throwable, A]]
-                f  = fa.attempt.flatMap { a => d.complete(a) }
+                d <- Deferred.apply[F, Either[Throwable, A]]
+                f  = fa.attempt.flatMap { a => d.complete(a).void }
                 r <- ref.modify {
                   case Some(fs) => ((f :: fs).some, void)
                   case None     => (List.empty[F[Unit]].some, start(f))

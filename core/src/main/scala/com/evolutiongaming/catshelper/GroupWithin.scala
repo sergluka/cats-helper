@@ -1,9 +1,10 @@
 package com.evolutiongaming.catshelper
 
 import cats.data.{NonEmptyList => Nel}
-import cats.effect.concurrent.{Ref, Semaphore}
+import cats.effect.kernel.Ref
+import cats.effect.std.Semaphore
 import cats.effect.implicits._
-import cats.effect.{Clock, Concurrent, Resource, Timer}
+import cats.effect.{Clock, Concurrent, Resource, Temporal}
 import cats.implicits._
 import cats.{Applicative, ~>}
 import com.evolutiongaming.catshelper.ClockHelper._
@@ -27,12 +28,12 @@ object GroupWithin {
       val enqueue = new Enqueue[F, A] {
         def apply(a: A) = f(Nel.of(a))
       }
-      Resource.liftF(enqueue.pure[F])
+      Resource.eval(enqueue.pure[F])
     }
   }
 
 
-  def apply[F[_]: Concurrent: Timer]: GroupWithin[F] = {
+  def apply[F[_]: Temporal]: GroupWithin[F] = {
 
     new GroupWithin[F] {
 
@@ -54,18 +55,18 @@ object GroupWithin {
 
         if (settings.size <= 1 || settings.delay <= 0.millis) {
           val enqueue: Enqueue[F, A] = a => f(Nel.of(a))
-          Resource.liftF(enqueue.pure[F])
+          Resource.eval(enqueue.pure[F])
         } else {
           val result = for {
-            semaphore <- Semaphore.uncancelable[F](1)
+            semaphore <- Semaphore[F](1)
             ref       <- Ref[F].of(S.empty)
           } yield {
 
-            def consume(as: Nel[A]) = semaphore.withPermit { f(as.reverse) }
+            def consume(as: Nel[A]) = semaphore.permit.use { _ => f(as.reverse) }
 
             def startTimer(timestamp: Long) = {
               val result = for {
-                _ <- Timer[F].sleep(settings.delay)
+                _ <- Temporal[F].sleep(settings.delay)
                 a <- ref.modify {
                   case s: S.Full if s.timestamp == timestamp => (S.empty, consume(s.as))
                   case s                                     => (s, void)
@@ -80,7 +81,7 @@ object GroupWithin {
             val enqueue = new Enqueue[F, A] {
 
               def apply(a: A) = {
-                Concurrent[F].uncancelable {
+                Concurrent[F].uncancelable { _ =>
                   for {
                     t <- Clock[F].nanos
                     a <- ref.modify {

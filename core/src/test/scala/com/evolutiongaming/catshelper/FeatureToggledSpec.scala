@@ -1,7 +1,8 @@
 package com.evolutiongaming.catshelper
 
-import cats.effect.concurrent.{MVar, Ref}
-import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.effect.kernel.Outcome.Succeeded
+import cats.effect.kernel.Ref
+import cats.effect.{IO, Resource, Temporal}
 import cats.implicits._
 import com.evolutiongaming.catshelper.testkit.PureTest.ioTest
 import com.evolutiongaming.catshelper.testkit.{PureTest, TestRuntime}
@@ -12,8 +13,9 @@ import org.scalatest.matchers.should.Matchers._
 import scala.collection.immutable.Queue
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import cats.effect.std
 
-class FeatureToggledSpec extends AnyFreeSpec {
+class FeatureToggledSpec extends AnyFreeSpec with TestIORuntime {
   "end-to-end polling" in scope { s =>
     import s._, env._
 
@@ -73,11 +75,11 @@ class FeatureToggledSpec extends AnyFreeSpec {
       import s._, env._
 
       for {
-        toggle <- MVar[IO].of(true)
+        toggle <- std.Queue.bounded[IO, Boolean](1).flatTap(_.offer(true))
         ftr     = FeatureToggled.of(baseResource, gracePeriod)(toggle.take.flatMap(_).foreverM)
 
         _ <- ftr.use { access =>
-          IO.sleep(1.nano) *> f((s, access, toggle.put(_)))
+          IO.sleep(1.nano) *> f((s, access, toggle.offer(_)))
         }
       } yield ()
     }
@@ -101,7 +103,10 @@ class FeatureToggledSpec extends AnyFreeSpec {
         // But must be still alive while it's in use.
         _  <- sleepUntil(targetTime - 1.nano)
         _  <- events.map(_ shouldBe List(1))
-        _  <- f1.join.map(_ shouldBe List(1))
+        _  <- f1.join.flatMap {
+          case Succeeded(value) => value.map(_ shouldBe List(1))
+          case x => fail(s"Expected outcome Succeeded but was $x")
+        }
 
         // Finally it goes down as soon as there is no usages.
         _  <- sleepUntil(targetTime + 1.nano)
@@ -132,12 +137,12 @@ class FeatureToggledSpec extends AnyFreeSpec {
   }
 
   "race-conditions" - {
-    final class Env(implicit val ec: ExecutionContext, val cs: ContextShift[IO], val timer: Timer[IO])
+    final class Env(implicit val ec: ExecutionContext)
     val env = cats.effect.Resource {
       IO {
         val tp = java.util.concurrent.Executors.newFixedThreadPool(32)
         val ec = scala.concurrent.ExecutionContext.fromExecutor(tp)
-        val env = new Env()(ec, IO.contextShift(ec), IO.timer(ec))
+        val env = new Env()(ec)
         env -> IO { tp.shutdown() }
       }
     }
@@ -150,9 +155,9 @@ class FeatureToggledSpec extends AnyFreeSpec {
           for {
             seed <- Ref[IO].of(1)
             flag <- Ref[IO].of(true)
-            r <- FeatureToggled.polling(Resource.liftF(seed.get), flag.get, 1.milli).allocated.map(_._1)
+            r <- FeatureToggled.polling(Resource.eval(seed.get), flag.get, 1.milli).allocated.map(_._1)
             _ <- {
-              val one = r.use(_ => IO.shift)
+              val one = r.use(_ => IO.cede)
               val loop = List.fill(1000)(one).sequence_
               List.fill(8)(loop).parSequence_
             }
