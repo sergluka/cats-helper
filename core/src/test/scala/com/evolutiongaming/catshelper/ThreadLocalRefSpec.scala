@@ -36,6 +36,7 @@ class ThreadLocalRefSpec extends AsyncFunSuite with Matchers {
 
       for {
         a  <- check
+        _  = println(s"${Thread.currentThread()}")
         a1 <- Async[F].evalOn(get, executor)
         _   = a should not equal a1
         _  <- ref.set(a + "|")
