@@ -6,18 +6,37 @@ import cats.Parallel
 import cats.arrow.FunctionK
 import cats.effect._
 import cats.effect.kernel.Ref
+import cats.effect.unsafe._
 import cats.implicits._
 import com.evolutiongaming.catshelper.IOSuite._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import org.scalatest.funsuite.AsyncFunSuite
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.Succeeded
 
 class ThreadLocalRefSpec extends AsyncFunSuite with Matchers {
 
   test("thread local stored per thread") {
-    val result = testF[IO](5)
-    result.run()
+    // here we override implicit IORuntime from TestIORuntime to guarantee that we have multiple threads
+    // regardless of number of CPUs
+    val (execContext, release) = executor[IO](5).allocated.unsafeRunSync()
+    val (blocking, blockingSh) = IORuntime.createDefaultBlockingExecutionContext()
+    val (scheduler, schedulerSh) = IORuntime.createDefaultScheduler()
+    val runtime = IORuntime(
+      compute = execContext,
+      blocking = blocking,
+      scheduler = scheduler,
+      shutdown = () => {
+        release.unsafeRunSync()
+        blockingSh()
+        schedulerSh()
+      },
+      config = IORuntimeConfig.apply()
+    )
+
+    testF[IO](5).timeout(5.seconds).as(Succeeded).unsafeToFuture()(runtime)
   }
 
   private def testF[F[_] : Async : ThreadLocalOf : Parallel](n: Int): F[Unit] = {
