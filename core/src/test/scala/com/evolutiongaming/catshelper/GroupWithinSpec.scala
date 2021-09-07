@@ -3,7 +3,7 @@ package com.evolutiongaming.catshelper
 import cats.arrow.FunctionK
 import cats.data.{NonEmptyList => Nel}
 import cats.effect.kernel.{Deferred, Ref}
-import cats.effect.{Concurrent, IO, Temporal}
+import cats.effect.{IO, Temporal}
 import cats.implicits._
 import com.evolutiongaming.catshelper.testkit.PureTest.ioTest
 import org.scalatest.freespec.AnyFreeSpec
@@ -33,7 +33,7 @@ class GroupWithinSpec extends AnyFreeSpec with Matchers with TestIORuntime {
     `consume on release`[IO]
   }
 
-  private def `support settings = 0`[F[_] : Concurrent : Temporal] = {
+  private def `support settings = 0`[F[_]: Temporal] = {
     val settings = GroupWithin.Settings(delay = 1.minute, size = 0)
     for {
       ref         <- Ref[F].of(List.empty[Nel[Int]])

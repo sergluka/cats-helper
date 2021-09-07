@@ -2,7 +2,7 @@ package com.evolutiongaming.catshelper
 
 import cats.effect.kernel.Outcome.Succeeded
 import cats.effect.kernel.Ref
-import cats.effect.{IO, Resource, Temporal}
+import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.evolutiongaming.catshelper.testkit.PureTest.ioTest
 import com.evolutiongaming.catshelper.testkit.{PureTest, TestRuntime}
@@ -149,9 +149,7 @@ class FeatureToggledSpec extends AnyFreeSpec with TestIORuntime {
 
     "don't get stuck after multiple concurrent uses" in {
       env
-        .use { env =>
-          import env._
-
+        .use { _ =>
           for {
             seed <- Ref[IO].of(1)
             flag <- Ref[IO].of(true)

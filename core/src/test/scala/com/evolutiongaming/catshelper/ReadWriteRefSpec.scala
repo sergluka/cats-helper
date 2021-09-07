@@ -1,7 +1,7 @@
 package com.evolutiongaming.catshelper
 
 import cats.effect.kernel.Outcome.Succeeded
-import cats.effect.{IO, Temporal}
+import cats.effect.IO
 import cats.implicits._
 import com.evolutiongaming.catshelper.testkit.PureTest
 import org.scalatest.freespec.AnyFreeSpec
@@ -55,7 +55,7 @@ class ReadWriteRefSpec extends AnyFreeSpec with TestIORuntime {
   }
 
   "can cancel blocked read" in scope { s =>
-    import s._, env._
+    import s._
 
     val lateReadWithTimeout = IO.sleep(1.second) *> IO.race(read, IO.sleep(1.second) *> getTime)
 
@@ -63,7 +63,7 @@ class ReadWriteRefSpec extends AnyFreeSpec with TestIORuntime {
   }
 
   "can cancel blocked write" in scope { s =>
-    import s._, env._
+    import s._
 
     val lateIncWithTimeout = IO.sleep(1.second) *> IO.race(inc, IO.sleep(1.second) *> getTime)
 

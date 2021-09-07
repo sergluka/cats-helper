@@ -6,7 +6,6 @@ import cats.effect.{Async, Concurrent, Resource, Temporal}
 import cats.implicits._
 
 import scala.concurrent.duration._
-import cats.effect.kernel.GenSpawn
 
 /**
  * Given a `Resource[F, A]` produces `Resource[F, Resource[F, Option[A]]]` which,

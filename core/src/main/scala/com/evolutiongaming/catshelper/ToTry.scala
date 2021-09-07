@@ -40,7 +40,14 @@ object ToTry {
       def error: Try[A] = Failure[A](new TimeoutException(timeout.toString()))
 
       for {
-        a <- Try { fa.unsafeRunTimed(timeout) }
+        a <- Try {
+          fa.syncStep.unsafeRunSync() match {
+            case Left(computation) =>
+              computation.unsafeRunTimed(timeout)
+            case Right(value) =>
+              Some(value)
+          }
+        }
         a <- a.fold(error) { a => Success(a) }
       } yield a
     }

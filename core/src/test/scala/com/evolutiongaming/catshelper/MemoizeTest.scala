@@ -17,7 +17,7 @@ class MemoizeTest extends AsyncFunSuite with Matchers {
 
   def shouldBeSuccedeed[A](outcome: Outcome[IO, Throwable, A], expected: A): IO[Unit] = {
     outcome match {
-      case Succeeded(fa)      => fa.map(value => value shouldEqual expected)
+      case Succeeded(fa)      => fa.map(value => value shouldEqual expected).void
       case Outcome.Errored(e) => fail(s"Outcome $outcome was expected to be Succeeded, but was Errored with $e", e)
       case Outcome.Canceled() => fail(s"Outcome $outcome was expected to be Succeeded, but was Canceled with")
     }
