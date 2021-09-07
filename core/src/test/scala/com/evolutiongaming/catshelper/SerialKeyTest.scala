@@ -5,12 +5,11 @@ import cats.effect.kernel.{Deferred, Ref}
 import cats.effect.syntax.all._
 import cats.effect.{Clock, Concurrent, IO, Sync, Temporal}
 import cats.syntax.all._
-import cats.{Hash, Parallel}
+import cats.Hash
 import com.evolutiongaming.catshelper.IOSuite._
 import org.scalatest.funsuite.AsyncFunSuite
 import org.scalatest.matchers.should.Matchers
 
-import java.util.concurrent.TimeUnit
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace

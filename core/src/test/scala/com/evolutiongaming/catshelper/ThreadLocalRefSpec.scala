@@ -16,13 +16,11 @@ import org.scalatest.matchers.should.Matchers
 class ThreadLocalRefSpec extends AsyncFunSuite with Matchers {
 
   test("thread local stored per thread") {
-    val result = executor[IO](5).use { executor =>
-      testF[IO](5)
-    }
+    val result = testF[IO](5)
     result.run()
   }
 
-  private def testF[F[_] : Async : ThreadLocalOf : Parallel : Clock](n: Int): F[Unit] = {
+  private def testF[F[_] : Async : ThreadLocalOf : Parallel](n: Int): F[Unit] = {
 
     def test(ref: ThreadLocalRef[F, String], executor: ExecutionContext) = {
 

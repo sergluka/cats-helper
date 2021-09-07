@@ -1,7 +1,7 @@
 package com.evolutiongaming.catshelper
 
 import cats.effect.implicits._
-import cats.effect.{Concurrent, Resource, Temporal}
+import cats.effect.{Resource, Temporal}
 import cats.implicits._
 
 import scala.concurrent.duration.FiniteDuration

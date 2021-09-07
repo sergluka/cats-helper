@@ -1,7 +1,7 @@
 package com.evolutiongaming.catshelper
 
 import cats.effect.kernel.{Deferred, Ref}
-import cats.effect.{Concurrent, IO, Sync}
+import cats.effect.{IO, Sync}
 import cats.implicits._
 import com.evolutiongaming.catshelper.IOSuite._
 import org.scalatest.funsuite.AsyncFunSuite

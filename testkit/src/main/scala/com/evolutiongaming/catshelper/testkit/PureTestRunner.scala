@@ -1,6 +1,5 @@
 package com.evolutiongaming.catshelper.testkit
 
-import cats.effect.implicits._
 import cats.effect.kernel.Outcome
 import cats.effect.testkit.{TestContext, TestInstances}
 import cats.effect.unsafe.IORuntime

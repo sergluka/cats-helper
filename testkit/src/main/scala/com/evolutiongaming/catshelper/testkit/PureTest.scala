@@ -2,8 +2,6 @@ package com.evolutiongaming.catshelper.testkit
 
 import cats.effect.IO
 import cats.effect.kernel.Async
-import cats.effect.std.Dispatcher
-import cats.effect.unsafe.IORuntime
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._

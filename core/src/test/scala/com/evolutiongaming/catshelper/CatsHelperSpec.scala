@@ -9,7 +9,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 import scala.util.{Failure, Try}
-import com.evolutiongaming.catshelper.testkit.TestRuntime
 
 class CatsHelperSpec extends AnyFunSuite with Matchers with TestIORuntime {
 
